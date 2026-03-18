@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lua Obfuscator Panel</title>
+  <style>
+    body {
+      background: #05060a;
+      color: #e5e7ef;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 10px;
+    }
+    .card {
+      background: radial-gradient(circle at top, #111827, #020617);
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 22px;
+      color: #e0f2fe;
+    }
+    label {
+      font-size: 13px;
+      color: #9ca3af;
+      display: block;
+      margin-bottom: 6px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      background: #020617;
+      color: #e5e7eb;
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      padding: 10px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8;
+    }
+    button {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(90deg, #0ea5e9, #22c55e);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    .error {
+      color: #f97373;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>LuaObfuscator Panel</h1>
+    <p style="font-size: 13px; color:#9ca3af;">
+      Pega tu script Lua a la izquierda y obtendrás el código ofuscado a la derecha.
+    </p>
+
+    <div class="row">
+      <div>
+        <label for="input">Script original</label>
+        <textarea id="input" placeholder="-- Pega aquí tu script Lua&#10;print('hola')"></textarea>
+      </div>
+      <div>
+        <label for="output">Script ofuscado</label>
+        <textarea id="output" readonly placeholder="Aquí aparecerá el resultado"></textarea>
+      </div>
+    </div>
+
+    <button id="btn">Obfuscar</button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById("btn");
+    const input = document.getElementById("input");
+    const output = document.getElementById("output");
+    const statusEl = document.getElementById("status");
+
+    btn.addEventListener("click", async () => {
+      const script = input.value.trim();
+      if (!script) {
+        statusEl.textContent = "Escribe un script primero.";
+        statusEl.classList.add("error");
+        return;
+      }
+
+      statusEl.textContent = "Ofuscando...";
+      statusEl.classList.remove("error");
+      btn.disabled = true;
+      output.value = "";
+
+      try {
+        const res = await fetch("/api/obfuscate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ script })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          statusEl.textContent = "Error al ofuscar: " + (data.error || res.status);
+          statusEl.classList.add("error");
+          return;
+        }
+
+        output.value = data.output || "// Sin output recibido";
+        statusEl.textContent = "Listo.";
+      } catch (e) {
+        statusEl.textContent = "Error de red o servidor.";
+        statusEl.classList.add("error");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
